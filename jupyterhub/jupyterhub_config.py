@@ -1,49 +1,35 @@
-FROM python
+import os
+import socket
 
 
-RUN apt-get update
-RUN apt-get install -y nodejs npm
-RUN git clone https://github.com/jupyterhub/kubespawner
-WORKDIR kubespawner
-RUN npm install -g configurable-http-proxy
-#RUN pip install jupyterhub jupyterhub-dummyauthenticator
-#RUN pip install jupyterhub-kubespawner
-RUN pip install -e .
-RUN pip install notebook
-RUN pip install dockerspawner
-RUN pip install netifaces
-RUN pip install 
-ENV USERNAME=admin
-ENV PASSWORD=Password2020
-#ENV KUBE-MASTER-IP=192.168.64.2
+c.JupyterHub.spawner_class = 'kubespawner.KubeSpawner'
 
-RUN useradd -m -p $(openssl passwd -1 ${PASSWORD}) -s /bin/bash -G sudo ${USERNAME}
-#USER admin
-RUN export HUB_CONNECT_IP=192.168.64.2
-ADD jupyterhub_config2.py jupyterhub_config.py
-CMD jupyterhub --no-ssl
-#FROM jupyterhub/jupyterhub
-#RUN pip install notebook
-#RUN pip install jupyterhub-kubespawner
-#RUN pip install jupyterhub jupyterhub-dummyauthenticator
+c.JupyterHub.ip = '0.0.0.0'
+c.JupyterHub.hub_ip = '0.0.0.0'
 
+# Don't try to cleanup servers on exit - since in general for k8s, we want
+# the hub to be able to restart without losing user containers
+c.JupyterHub.cleanup_servers = False
 
-#ADD jupyterhub_config2.py jupyterhub_config.py
-#RUN export HUB_CONNECT_IP=${KUBE-MASTER-IP}
-#CMD jupyterhub --config jupyterhub_config.py --no-ssl
+# First pulls can be really slow, so let's give it a big timeout
+c.KubeSpawner.start_timeout = 60 * 5
 
+# Our simplest user image! Optimized to just... start, and be small!
+c.KubeSpawner.image = 'jupyterhub/singleuser:1.0'
+#c.KubeSpawner.image = 'jupyter/all-spark-notebook'
+# Find the IP of the machine that minikube is most likely able to talk to
+# Graciously used from https://stackoverflow.com/a/166589
+s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+s.connect(("8.8.8.8", 80))
+host_ip = s.getsockname()[0]
+s.close()
 
+c.JupyterHub.hub_connect_ip = host_ip
 
-# https://github.com/jupyterhub/kubespawner/issues/18
-#FROM jupyterhub/jupyterhub-onbuild:0.7.1
-# Install kubespawner and its dependencies
-#RUN /opt/conda/bin/pip install \
-#    oauthenticator==0.5.* \
-#    git+https://github.com/derrickmar/kubespawner \
-#    git+https://github.com/yuvipanda/jupyterhub-nginx-chp.git
-#RUN pip install jupyterhub jupyterhub-dummyauthenticator
-#ADD jupyterhub_config.py /srv/jupyterhub_config.py
-#ADD userlist /srv/userlist
-#WORKDIR /srv/jupyterhub
-#EXPOSE 8081
-#CMD jupyterhub --config /srv/jupyterhub_config.py --no-ssl
+c.KubeSpawner.service_account = 'jupyter-hub'
+# Do not use any authentication at all - any username / password will work.
+c.JupyterHub.authenticator_class = 'dummyauthenticator.DummyAuthenticator'
+
+c.KubeSpawner.storage_pvc_ensure = False
+
+c.JupyterHub.allow_named_servers = True
