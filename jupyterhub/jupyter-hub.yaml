@@ -1,0 +1,73 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: jupyter-hub
+  namespace: juphub
+  labels:
+    app.kubernetes.io/name: juphub
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "pods"
+  verbs:
+  - "get"
+  - "list"
+  - "delete"
+  - "watch"
+  - "edit"
+  - "create"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: jupyter-hub
+  namespace: juphub
+subjects:
+  - kind: ServiceAccount
+    name: jupyter-hub
+    apiGroup: ""
+roleRef:
+  kind: Role
+  name: jupyter-hub
+  apiGroup: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: juphub
+  namespace: juphub
+  name: juphub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: juphub
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: juphub
+    spec:
+      containers:
+      - image: abrj/mc:jubhub
+        name: jhub
+        ports:
+        - containerPort: 8000
+          name: ui
+        imagePullPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jupyter-hub
+  namespace: juphub
+  labels:
+    app.kubernetes.io/name: juphub
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: ui
+  selector:
+    app.kubernetes.io/name: juphub
