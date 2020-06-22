@@ -15,8 +15,8 @@ spec:
         app.kubernetes.io/name: load-balancer-example
     spec:
       containers:
-      - image: abrj/mc:jubhub-gitlab
-        name: jhub
+      - image: abrj/mc:jubhub
+        name: juphub
         ports:
         - containerPort: 8000
         imagePullPolicy: Always

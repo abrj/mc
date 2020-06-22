@@ -12,8 +12,8 @@ spec:
     port: 8888
     targetPort: 8888
   - name: comm
-    port: 37371
-    targetPort: 37371
+    port: 39777 
+    targetPort: 39777
   - name: blockmngr
     port: 6060
     targetPort: 6060

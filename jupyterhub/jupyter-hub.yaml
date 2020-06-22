@@ -10,6 +10,7 @@ rules:
   - ""
   resources:
   - "pods"
+  - "services"
   verbs:
   - "get"
   - "list"
@@ -51,7 +52,7 @@ spec:
     spec:
       containers:
       - image: abrj/mc:jubhub
-        name: jhub
+        name: juphub
         ports:
         - containerPort: 8000
           name: ui
